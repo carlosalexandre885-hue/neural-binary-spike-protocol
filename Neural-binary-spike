@@ -1,0 +1,40 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+dt = 0.1          
+duration = 100    
+t = np.arange(0, duration, dt)
+
+v_threshold = 1.0  
+v_reset = 0.0      
+tau = 10.0         
+v_membrane = np.zeros_like(t)
+spikes = np.zeros_like(t)
+
+input_current = np.where((t > 10) & (t < 90), 1.5, 0.0)
+
+v = v_reset
+for i in range(len(t)):
+    v += (-v + input_current[i]) * (dt / tau)
+    if v >= v_threshold:
+        spikes[i] = 1  
+        v = v_reset    
+    v_membrane[i] = v
+
+total_spikes = int(np.sum(spikes))
+frequency = total_spikes / (duration / 1000.0)
+
+print(f"Total Spikes: {total_spikes}")
+print(f"Frequency: {frequency} Hz")
+
+plt.figure(figsize=(10, 7))
+plt.subplot(2, 1, 1)
+plt.plot(t, input_current, color='blue', label='Input')
+plt.legend()
+plt.subplot(2, 1, 2)
+plt.plot(t, v_membrane, color='magenta', label='Membrane')
+plt.vlines(t[spikes==1], 0, 1.2, color='green', label='Spikes')
+plt.legend()
+plt.tight_layout()
+plt.savefig('neural_spikes_result.png')
+plt.show()
