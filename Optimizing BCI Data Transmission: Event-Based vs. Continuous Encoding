@@ -1,0 +1,32 @@
+import matplotlib.pyplot as plt
+
+# --- DADOS EXTRAÍDOS DA SIMULAÇÃO ---
+labels = ['Tradicional\n(1-bit/n/t)', 'Seu Protocolo\n(Event-Based)']
+bits_tradicional = size_bitstream
+bits_seu_protocolo = size_event
+
+# --- CONFIGURAÇÃO VISUAL ---
+plt.figure(figsize=(10, 6))
+
+# 1. Gráfico de Barras de Eficiência
+plt.subplot(1, 2, 1)
+bars = plt.bar(labels, [bits_tradicional, bits_seu_protocolo], color=['gray', '#1f77b4'])
+plt.title("Consumo de Banda (Bits)")
+plt.ylabel("Total de Bits Transmitidos")
+
+# Adicionando os valores em cima das barras
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2, yval + 100, int(yval), ha='center', va='bottom', fontweight='bold')
+
+# 2. Raster Plot (Visualização dos 100 Neurônios)
+plt.subplot(1, 2, 2)
+if event_log:
+    timestamps, neuron_ids = zip(*event_log)
+    plt.scatter(timestamps, neuron_ids, s=2, color='red', marker='|')
+plt.title("Mapa de Disparos (100 Neurônios)")
+plt.xlabel("Tempo (ms)")
+plt.ylabel("ID do Neurônio")
+
+plt.tight_layout()
+plt.show()
