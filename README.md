@@ -20,7 +20,7 @@
 * **[span_16](start_span)[span_17](start_span)Thermal Impact:** This reduction is vital for clinical implants like the **Neuralink N1** to prevent thermal neurotoxicity[span_16](end_span)[span_17](end_span).
 
 ## 📄 Documentation
-The full technical paper is available in this repository: [V3 project spikes.pdf](V3%20project%20spikes.pdf).
+The full technical paper is available in this repository:https://zenodo.org/records/18725559
 
 ---
 *Developed for the validation of high-bandwidth communication protocols in Neuroengineering.*
