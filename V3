@@ -1,0 +1,105 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+# --- PARÂMETROS ---
+n_neurons_A = 100
+n_neurons_B = 80  
+sim_time = 500
+dt = 1
+packet_size = 16 # 16 bits por evento (ID + Timestamp)
+
+# LIF parameters
+V_rest = -65
+V_thresh = -50
+V_reset = -65
+tau = 20
+I_ext_mean = 1.5
+
+# --- INICIALIZAÇÃO ---
+V_A = np.ones(n_neurons_A) * V_rest
+V_B = np.ones(n_neurons_B) * V_rest
+
+percept_A = np.zeros(n_neurons_A, dtype=int)
+percept_B = np.zeros(n_neurons_B, dtype=int)
+
+spike_times_A = []
+spike_times_B = []
+
+bitstream_trad = 0
+bitstream_event = 0
+
+# --- MAPEAMENTO ---
+neuron_map_A2B = {i: i for i in range(n_neurons_B)}
+neuron_map_B2A = {i: i for i in range(n_neurons_B)} 
+
+# --- SIMULAÇÃO ---
+for t in range(0, sim_time, dt):
+    I_ext_A = I_ext_mean + np.random.normal(0, 0.5, n_neurons_A)
+    I_ext_B = 0.2 + np.random.normal(0, 0.1, n_neurons_B)
+    
+    V_A += (-(V_A - V_rest) + I_ext_A) * (dt / tau)
+    V_B += (-(V_B - V_rest) + I_ext_B) * (dt / tau)
+    
+    # Decaimento do percepto (para permitir novos envios após um tempo)
+    # Se o neurônio não dispara, ele 'esquece' o estado eventualmente.
+    # Aqui, simplificamos resetando a cada timestep para espelhar a atividade contínua.
+    percept_A[:] = 0 
+    percept_B[:] = 0
+    
+    # --- Conectoma A dispara ---
+    spiked_A = np.where(V_A >= V_thresh)[0]
+    for neuron_id in spiked_A:
+        V_A[neuron_id] = V_reset
+        spike_times_A.append((t, neuron_id))
+        
+        if neuron_id in neuron_map_A2B:
+            target_B = neuron_map_A2B[neuron_id]
+            percept_A[neuron_id] = 1
+            percept_B[target_B] = 1
+            bitstream_event += packet_size # Soma 16 bits por pacote
+    
+    # --- Conectoma B dispara ---
+    spiked_B = np.where(V_B >= V_thresh)[0]
+    for neuron_id in spiked_B:
+        V_B[neuron_id] = V_reset
+        spike_times_B.append((t, neuron_id))
+        
+        if neuron_id in neuron_map_B2A:
+            target_A = neuron_map_B2A[neuron_id]
+            percept_B[neuron_id] = 1
+            percept_A[target_A] = 1
+            bitstream_event += packet_size # Soma 16 bits por pacote
+    
+    # Tradicional: 1 bit por neurônio a cada dt (ida e volta)
+    bitstream_trad += n_neurons_A + n_neurons_B
+
+# --- PLOTAGEM ---
+plt.figure(figsize=(14, 6))
+
+# Gráfico 1: Barras de consumo (CORRIGIDO)
+plt.subplot(1, 2, 1) 
+labels = ['Tradicional\n(Contínuo)', 'Event-Based\n(RBS - 16 bits)']
+bars = plt.bar(labels, [bitstream_trad, bitstream_event], color=['#e74c3c', '#2ecc71'])
+plt.title("Consumo de Banda Bidirecional (Bits)")
+plt.ylabel("Total de Bits Transmitidos")
+
+# Adiciona os números em cima das barras
+for bar in bars:
+    yval = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width()/2, yval + (yval*0.02), f"{int(yval):,}", ha='center', va='bottom', fontweight='bold')
+
+# Gráfico 2: Raster plot A e B (CORRIGIDO)
+plt.subplot(1, 2, 2)
+if spike_times_A:
+    timestamps, neuron_ids = zip(*spike_times_A)
+    plt.scatter(timestamps, neuron_ids, s=15, color='#e74c3c', marker='|', label='Córtex Motor (A)')
+if spike_times_B:
+    timestamps, neuron_ids = zip(*spike_times_B)
+    plt.scatter(timestamps, neuron_ids, s=15, color='#3498db', marker='|', label='Somatossensorial (B)')
+plt.title("Raster Plot - Comunicação Closed-Loop")
+plt.xlabel("Tempo (ms)")
+plt.ylabel("ID do Neurônio")
+plt.legend(loc="upper right")
+
+plt.tight_layout()
+plt.show()
